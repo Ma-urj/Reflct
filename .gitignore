@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Electron build output
+dist/
+out/
+build/
+
+# Project working files
+*.vap
+*.mkv
+*.mp4
+*.wav
+*.mp3
+*.aac
+
+# Extracted frames (temp)
+frames/
+tmp/
+temp/
+
+# User settings
+.va-settings.json
+~/.va-settings.json
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Logs
+*.log
+npm-debug.log*
+
+# Electron cache
+.cache/
