@@ -6,6 +6,8 @@ It is built for anyone who records themselves and wants honest, specific feedbac
 
 It combines a full non-linear video editor with a YouTube downloader and a multi-pass AI analysis engine that processes the entire video — never just a sample — and synthesizes every observation into a structured coaching report with timestamped notes, a written summary, and numerical scores.
 
+**Reflct is designed to be a general-purpose foundation for AI video coaching, not a tool locked to one use case.** The current version routes every video through a broad multimodal model, which makes it flexible across situations but not deeply specialized for any single one. The larger vision is to make this modular: a routing layer first identifies what kind of video is being analyzed — an interview, a sales call, a presentation, a training session — and then passes it to a domain-specific evaluator built and tuned for that context. This would make feedback significantly more precise, and it would make the project more open to community contribution, since anyone who understands a domain well could build and plug in a specialized evaluator for it. The current architecture is the foundation that makes that possible.
+
 ---
 
 ## Demo
@@ -783,3 +785,57 @@ If the analysis returned `success: false`, check the alert message for the error
 **High API costs**
 
 Use **GPT-4o mini** in the model dropdown for faster, cheaper analysis. Mini is ~60% cheaper and produces slightly less detailed observations, but the summary and scores are still accurate. For rough drafts, this is usually sufficient. Switch to GPT-4o for final or important reviews.
+
+---
+
+## 18. Future Direction
+
+The current version of Reflct is a working foundation. Every video is analyzed by a single broad multimodal model that adapts to context through the three-question form. That works well enough for a wide range of situations, but it has a ceiling — a general model asked to evaluate an interview and a general model asked to evaluate a sales pitch are doing their best with shared weights and no specialization. The feedback will always be competent, rarely exceptional.
+
+The direction we want to take Reflct is toward a **modular, domain-routed architecture**.
+
+### The routing layer
+
+Instead of sending every video directly to a single analysis pipeline, a routing step first classifies the video type based on the user's context input. The three fields — who you are, what you're doing, what the video is about — already contain enough signal to make this classification accurately. The router identifies the domain (interview, presentation, sales, content creation, training, etc.) and selects the appropriate evaluator for that domain.
+
+### Domain-specific evaluators
+
+Each evaluator is a specialized module: a tailored system prompt, a different set of scoring dimensions, a different set of observation categories, and potentially different frame sampling logic for that content type.
+
+For example:
+
+| Domain | Specialized criteria | What changes |
+| --- | --- | --- |
+| **Job interview** | Behavioral answer structure (STAR), filler word count, eye contact with interviewer, confidence under pressure | Scoring rubric, observation focus, summary framing |
+| **Sales / discovery call** | Active listening signals, objection handling, pacing of pitch, rapport-building, closing language | Observation categories, tone analysis weight |
+| **Presentation / public speaking** | Slide transition timing, audience engagement, vocal variety, use of pauses, storytelling structure | Frame sampling rate, scoring dimensions |
+| **Training / coaching session** | Clarity of instruction, check-for-understanding moments, energy management, pacing for learner retention | Evaluation lens, feedback tone |
+| **Content creation / vlog** | On-camera charisma, editing pacing awareness, hook strength, thumbnail moment, scripted vs. natural delivery | Entirely different scoring schema |
+
+### Why this makes the project collaborative
+
+The routing layer + evaluator pattern means contributors don't need to understand the whole codebase to add value. A recruiter who knows exactly what good interview answers look like can write an interview evaluator. A sales coach can tune the sales evaluator. A documentary filmmaker can build one for long-form storytelling. Each evaluator is an isolated module — a prompt, a scoring schema, and optionally a custom frame-sampling config.
+
+This also makes Reflct more useful as a tool for coaches and instructors who want to build their own evaluation criteria for their specific context, rather than depending on a general model's interpretation of what "good" looks like in their field.
+
+### What this requires architecturally
+
+The main additions to the existing codebase would be:
+
+1. **A routing function** — takes the three context fields as input, calls a lightweight classification model (or a simple prompt against GPT-4o mini), returns a domain tag.
+2. **An evaluator registry** — a map of domain tags to evaluator configs (system prompt, scoring dimensions, frame density overrides).
+3. **Per-evaluator scoring schemas** — the current 10-category schema is replaced by domain-specific schemas that are still rendered the same way in the UI.
+4. **A fallback evaluator** — the current general-purpose pipeline, used when no specific domain is matched.
+
+The renderer, timeline, analysis panel, and IPC layer would not need to change — the output format (`timestamps`, `summary`, `scores`) is already domain-agnostic.
+
+### Contributing an evaluator
+
+If you have deep domain expertise and want to contribute a specialized evaluator, the expected contribution shape is:
+
+- A system prompt that instructs the model on what to look for in that domain
+- A scoring schema (list of categories with descriptions, replacing the default 10)
+- Optionally: a frame sampling profile (frame density or interval tuned for that content type)
+- A test video and expected output illustrating what good feedback looks like in that domain
+
+Open a PR or issue to discuss — all evaluator contributions are welcome.
